@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    :root {
+      /* Figma UI3 color palette */
+      --figma-color-bg: #ffffff;
+      --figma-color-bg-secondary: #f5f5f5;
+      --figma-color-bg-tertiary: #e6e6e6;
+      --figma-color-bg-hover: #f0f0f0;
+      --figma-color-bg-danger: #FBE6E6;
+      --figma-color-text: #000000;
+      --figma-color-text-secondary: #333333;
+      --figma-color-text-tertiary: #7f7f7f;
+      --figma-color-border: #e5e5e5;
+      --figma-color-border-strong: #d9d9d9;
+      --figma-color-icon: #333333;
+      --figma-color-primary: #18A0FB;
+      --figma-color-primary-hover: #0d96f2;
+      --figma-color-selected: #daebf7;
+      --figma-radius-small: 2px;
+      --figma-radius-medium: 5px;
+      --figma-radius-large: 6px;
+      --figma-space-xxsmall: 4px;
+      --figma-space-xsmall: 8px;
+      --figma-space-small: 12px;
+      --figma-space-medium: 16px;
+      --figma-space-large: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+      font-size: 11px;
+      line-height: 16px;
+      color: var(--figma-color-text);
+      background-color: var(--figma-color-bg);
+      overflow: hidden;
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top header */
+    .plugin-header {
+      display: none;
+    }
+
+    /* Main content */
+    .plugin-content {
+      padding: var(--figma-space-small);
+      display: flex;
+      flex-direction: column;
+      gap: var(--figma-space-medium);
+      overflow-y: auto;
+    }
+
+    /* Section */
+    .section {
+      border: 1px solid var(--figma-color-border);
+      border-radius: var(--figma-radius-medium);
+      padding: var(--figma-space-small);
+      background-color: var(--figma-color-bg);
+    }
+
+    .section-title {
+      font-weight: 600;
+      font-size: 11px;
+      margin-bottom: var(--figma-space-xsmall);
+      color: var(--figma-color-text);
+      display: flex;
+      align-items: center;
+      gap: var(--figma-space-xsmall);
+    }
+
+    .section-description {
+      font-size: 11px;
+      color: var(--figma-color-text-tertiary);
+      margin-bottom: var(--figma-space-small);
+    }
+
+    /* Form elements */
+    button {
+      font-size: 11px;
+      font-weight: 500;
+      padding: var(--figma-space-xxsmall) var(--figma-space-small);
+      border-radius: var(--figma-radius-medium);
+      cursor: pointer;
+      border: 1px solid var(--figma-color-border-strong);
+      background-color: var(--figma-color-bg);
+      color: var(--figma-color-text);
+      height: 30px;
+      transition: background-color 0.1s ease;
+    }
+
+    button:hover {
+      background-color: var(--figma-color-bg-hover);
+    }
+
+    button.primary {
+      background-color: var(--figma-color-primary);
+      border: none;
+      color: white;
+    }
+
+    button.primary:hover {
+      background-color: var(--figma-color-primary-hover);
+    }
+
+    .button-row {
+      display: flex;
+      gap: var(--figma-space-xsmall);
+      margin-top: var(--figma-space-small);
+    }
+
+    /* Badge */
+    .badge {
+      font-size: 10px;
+      background-color: var(--figma-color-bg-tertiary);
+      color: var(--figma-color-text-tertiary);
+      padding: 1px 4px;
+      border-radius: var(--figma-radius-small);
+      margin-left: 4px;
+      font-weight: 500;
+    }
+
+    .badge.primary {
+      background-color: var(--figma-color-primary);
+      color: white;
+    }
+
+    /* Results panel */
+    .results-panel {
+      display: none;
+      margin-top: var(--figma-space-medium);
+      border: 1px solid var(--figma-color-border);
+      border-radius: var(--figma-radius-medium);
+      overflow: hidden;
+    }
+
+    .results-panel.show {
+      display: block;
+    }
+
+    .results-header {
+      padding: var(--figma-space-xsmall);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--figma-color-border);
+      background-color: var(--figma-color-bg-secondary);
+    }
+
+    .results-title {
+      font-size: 11px;
+      color: var(--figma-color-text);
+    }
+
+    .results-actions {
+      display: flex;
+      align-items: center;
+    }
+
+    .icon-button {
+      background: none;
+      border: none;
+      padding: 4px;
+      cursor: pointer;
+      color: var(--figma-color-text-tertiary);
+      font-size: 10px;
+      height: auto;
+    }
+
+    .icon-button:hover {
+      color: var(--figma-color-text);
+      background: none;
+    }
+
+    .results-list {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .result-item {
+      padding: var(--figma-space-xsmall);
+      display: flex;
+      align-items: center;
+      gap: var(--figma-space-xsmall);
+      border-bottom: 1px solid var(--figma-color-border);
+    }
+
+    .result-item:last-child {
+      border-bottom: none;
+    }
+
+    .result-icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--figma-color-bg-secondary);
+      border-radius: var(--figma-radius-small);
+      flex-shrink: 0;
+    }
+
+    .result-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .result-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--figma-color-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .result-subtitle {
+      font-size: 10px;
+      color: var(--figma-color-text-tertiary);
+    }
+
+    .success-text {
+      color: #1ea362;
+    }
+
+    /* Empty State */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--figma-space-large) var(--figma-space-medium);
+      color: var(--figma-color-text-tertiary);
+      text-align: center;
+    }
+
+    .empty-state-icon {
+      font-size: 20px;
+      margin-bottom: var(--figma-space-small);
+      opacity: 0.7;
+    }
+
+    .empty-state-text {
+      font-size: 11px;
+      max-width: 240px;
+      line-height: 16px;
+    }
+
+    /* Warning Dialog */
+    .warning-dialog {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.3);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .warning-dialog.show {
+      display: flex;
+    }
+
+    .warning-content {
+      background: var(--figma-color-bg);
+      border-radius: var(--figma-radius-large);
+      padding: var(--figma-space-medium);
+      width: 280px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .warning-title {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: var(--figma-space-small);
+      color: var(--figma-color-text);
+    }
+
+    .warning-message {
+      color: var(--figma-color-text-secondary);
+      margin-bottom: var(--figma-space-medium);
+      line-height: 1.4;
+    }
+
+    .warning-actions {
+      display: flex;
+      gap: var(--figma-space-xsmall);
+      justify-content: flex-end;
+    }
+
+    .warning-actions button {
+      min-width: 80px;
+    }
+  </style>
+</head>
+<body>
+  <div class="plugin-content">
+    <div class="section">
+      <div class="section-title">
+        <span>Image Optimization</span>
+        <span class="badge primary">3×</span>
+      </div>
+      <div class="section-description">Optimize images for better Safari compatibility and performance.</div>
+
+      <button id="compress-button" class="primary">Compress Images</button>
+
+      <div id="results-panel" class="results-panel">
+        <div class="results-header">
+          <div class="results-title">Processed Images</div>
+          <div class="results-actions">
+            <button class="icon-button" id="clear-results">Clear</button>
+          </div>
+        </div>
+        <div id="results-list" class="results-list"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">SVG Export Fix</div>
+      <div class="section-description">Fix frames with effects to ensure proper SVG export in Safari.</div>
+
+      <div class="button-row">
+        <button id="fix-button" class="primary">Fix Effects</button>
+        <button id="cancel-button">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Warning Dialog -->
+  <div id="warning-dialog" class="warning-dialog">
+    <div class="warning-content">
+      <div class="warning-title">Warning</div>
+      <div id="warning-message" class="warning-message">
+        This action will modify the selected layers. It's recommended to duplicate your selection first.
+      </div>
+      <div class="warning-actions">
+        <button id="warning-cancel" class="secondary">Cancel</button>
+        <button id="warning-proceed" class="primary">Proceed</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Keep track of processed images
+    let processedImages = [];
+
+    // Get DOM elements
+    const resultsPanel = document.getElementById('results-panel');
+    const resultsList = document.getElementById('results-list');
+    const clearButton = document.getElementById('clear-results');
+
+    // Warning dialog functionality
+    const warningDialog = document.getElementById('warning-dialog');
+    const warningMessage = document.getElementById('warning-message');
+    const warningCancel = document.getElementById('warning-cancel');
+    const warningProceed = document.getElementById('warning-proceed');
+    let pendingAction = null;
+
+    function showWarning(action, message) {
+      pendingAction = action;
+      warningMessage.textContent = message;
+      warningDialog.classList.add('show');
+    }
+
+    function hideWarning() {
+      warningDialog.classList.remove('show');
+      pendingAction = null;
+    }
+
+    warningCancel.onclick = hideWarning;
+
+    warningProceed.onclick = () => {
+      if (pendingAction) {
+        pendingAction();
+      }
+      hideWarning();
+    };
+
+    // Function to show results container
+    function showResults() {
+      resultsPanel.classList.add('show');
+    }
+
+    // Function to update the results list
+    function updateResultsList() {
+      if (processedImages.length === 0) {
+        resultsList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🖼️</div>
+            <div class="empty-state-text">No images processed yet</div>
+          </div>
+        `;
+      } else {
+        // Build the list HTML
+        let listHTML = '';
+        processedImages.forEach(image => {
+          const reduction = image.originalSize > 0 ?
+            Math.round((1 - (image.newSize / image.originalSize)) * 100) : 0;
+
+          const reductionText = reduction > 0 ?
+            `${reduction}% smaller` :
+            'Size unchanged';
+
+          listHTML += `
+            <div class="result-item">
+              <div class="result-icon">🖼️</div>
+              <div class="result-content">
+                <div class="result-title">${image.name}</div>
+                <div class="result-subtitle">
+                  ${Math.round(image.originalSize / 1024)}KB → ${Math.round(image.newSize / 1024)}KB
+                  <span class="success-text">${reductionText}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+
+        resultsList.innerHTML = listHTML;
+      }
+    }
+
+    // Clear results
+    clearButton.onclick = () => {
+      processedImages = [];
+      updateResultsList();
+      resultsPanel.classList.remove('show');
+    };
+
+    // Listen for messages from the plugin
+    window.onmessage = (event) => {
+      const message = event.data.pluginMessage;
+
+      if (message && message.type === 'image-processed') {
+        // Add the processed image to our list
+        processedImages.push({
+          name: message.name,
+          originalSize: message.originalSize,
+          newSize: message.newSize,
+          dimensions: message.dimensions
+        });
+
+        // Show results and update the list
+        showResults();
+        updateResultsList();
+      }
+    };
+
+    // Button event handlers
+    document.getElementById('compress-button').onclick = () => {
+      showWarning(
+        () => parent.postMessage({ pluginMessage: { type: 'compress-images' } }, '*'),
+        "This action will modify the selected images. It's recommended to duplicate your selection first."
+      );
+    };
+
+    document.getElementById('fix-button').onclick = () => {
+      showWarning(
+        () => parent.postMessage({ pluginMessage: { type: 'fix-effects' } }, '*'),
+        "This action will modify frames with effects. It's recommended to duplicate your selection first."
+      );
+    };
+
+    document.getElementById('cancel-button').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*');
+    };
+  </script>
+</body>
+</html>
