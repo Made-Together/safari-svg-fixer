@@ -1,4 +1,4 @@
-# Safari SVG Fixer
+# Safari SVG Fixer for Figma
 
 A Figma plugin that helps fix SVG export issues for Safari compatibility and optimizes file sizes.
 
@@ -55,4 +55,4 @@ This plugin is built using Figma's plugin API. The main components are:
 
 ## License
 
-MIT License - See LICENSE file for details
+This project is released under the [Creative Commons CC0 1.0 Universal](LICENSE) license, which effectively places it in the public domain. You can use, modify, and distribute this software for any purpose without restriction.
