@@ -78,8 +78,133 @@ figma.ui.onmessage = async (msg) => {
     }
   }
 
+  if (msg.type === "preview") {
+    const selection = figma.currentPage.selection;
+    console.log("Preview requested for selection:", selection);
+
+    if (selection.length === 0) {
+      figma.notify("Please select at least one frame");
+      return;
+    }
+
+    try {
+      // Create a temporary frame to hold all selected nodes
+      const tempFrame = figma.createFrame();
+      tempFrame.name = "Preview Frame";
+
+      // Copy all selected nodes into the temporary frame
+      for (const node of selection) {
+        const clone = node.clone();
+        tempFrame.appendChild(clone);
+      }
+
+      // Export the frame as SVG
+      const svgBytes = await tempFrame.exportAsync({
+        format: "SVG",
+      });
+
+      // Convert SVG bytes to string and ensure it's valid SVG
+      const svgString = String.fromCharCode.apply(null, svgBytes);
+      console.log("SVG Content:", svgString); // Debug log
+
+      // Create HTML content for preview
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Safari SVG Preview</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .preview-section {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      background: white;
+      margin-top: 20px;
+    }
+    h1 {
+      margin: 0 0 20px;
+      font-size: 24px;
+    }
+    h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: #333;
+    }
+    .preview-image {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      padding: 20px;
+      background: white;
+    }
+    pre {
+      background: #f8f8f8;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.4;
+      margin: 0;
+    }
+    .code-container {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Safari SVG Preview</h1>
+
+    <div class="preview-section">
+      <h2>SVG as Image Tag</h2>
+      <img src="./preview.svg" class="preview-image">
+    </div>
+
+    <div class="preview-section">
+      <h2>SVG Code</h2>
+      <div class="code-container">
+        <pre>${svgString
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</pre>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+      // Send both HTML and raw SVG bytes to the UI
+      figma.ui.postMessage({
+        type: "create-preview",
+        html: htmlContent,
+        svg: Array.from(svgBytes), // Convert Uint8Array to regular array
+      });
+
+      // Clean up the temporary frame
+      tempFrame.remove();
+    } catch (error) {
+      console.error("Error generating preview:", error);
+      figma.notify(`Error: ${error.message}`);
+    }
+  }
+
   if (msg.type === "cancel") {
     figma.closePlugin();
+  }
+
+  if (msg.type === "notify") {
+    figma.notify(msg.message);
   }
 };
 

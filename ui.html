@@ -306,10 +306,54 @@
     .warning-actions button {
       min-width: 80px;
     }
+
+    .preview-section {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 8px;
+    }
+
+    .preview-container {
+      display: flex;
+      gap: 20px;
+    }
+
+    .preview-column {
+      flex: 1;
+    }
+
+    .preview-column h3 {
+      margin-top: 0;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .preview-frame, .preview-image {
+      width: 100%;
+      height: 200px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+    }
+
+    .preview-image {
+      object-fit: contain;
+    }
   </style>
 </head>
 <body>
   <div class="plugin-content">
+    <div class="section">
+      <div class="section-title">SVG Export Fix</div>
+      <div class="section-description">Fix frames with effects to ensure proper SVG export in Safari.</div>
+
+      <div class="button-row">
+        <button id="fix-button" class="primary">Fix Effects</button>
+        <button id="test-button" class="primary">Test your SVG</button>
+      </div>
+    </div>
+
     <div class="section">
       <div class="section-title">
         <span>Image Optimization</span>
@@ -327,16 +371,6 @@
           </div>
         </div>
         <div id="results-list" class="results-list"></div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">SVG Export Fix</div>
-      <div class="section-description">Fix frames with effects to ensure proper SVG export in Safari.</div>
-
-      <div class="button-row">
-        <button id="fix-button" class="primary">Fix Effects</button>
-        <button id="cancel-button">Cancel</button>
       </div>
     </div>
   </div>
@@ -444,6 +478,7 @@
     // Listen for messages from the plugin
     window.onmessage = (event) => {
       const message = event.data.pluginMessage;
+      console.log("UI received message:", message);
 
       if (message && message.type === 'image-processed') {
         // Add the processed image to our list
@@ -457,6 +492,71 @@
         // Show results and update the list
         showResults();
         updateResultsList();
+      } else if (message && message.type === 'create-preview') {
+        try {
+          console.log("Received preview data");
+
+          // Create both files first
+          const svgContent = new Uint8Array(message.svg).reduce((data, byte) => data + String.fromCharCode(byte), '');
+          const svgBlob = new Blob([svgContent], { type: 'image/svg+xml' });
+          const htmlBlob = new Blob([message.html], { type: 'text/html' });
+
+          // Create both URLs
+          const svgUrl = URL.createObjectURL(svgBlob);
+          const htmlUrl = URL.createObjectURL(htmlBlob);
+
+          // Create both links
+          const svgLink = document.createElement('a');
+          const htmlLink = document.createElement('a');
+
+          // Set up SVG link
+          svgLink.href = svgUrl;
+          svgLink.download = 'preview.svg';
+          document.body.appendChild(svgLink);
+
+          // Set up HTML link
+          htmlLink.href = htmlUrl;
+          htmlLink.download = 'preview.html';
+          document.body.appendChild(htmlLink);
+
+          // Trigger downloads
+          svgLink.click();
+          htmlLink.click();
+
+          // Clean up
+          document.body.removeChild(svgLink);
+          document.body.removeChild(htmlLink);
+          URL.revokeObjectURL(svgUrl);
+          URL.revokeObjectURL(htmlUrl);
+
+          console.log("Both files created");
+
+          // Show notification
+          parent.postMessage({
+            pluginMessage: {
+              type: 'notify',
+              message: 'Preview files created! Make sure both files are in the same folder and open preview.html in Safari.'
+            }
+          }, '*');
+        } catch (error) {
+          console.error("Error creating preview files:", error);
+          parent.postMessage({
+            pluginMessage: {
+              type: 'notify',
+              message: 'Error creating preview files: ' + error.message
+            }
+          }, '*');
+        }
+      } else if (message && message.type === 'preview-data') {
+        console.log("Received preview data");
+        const previewSection = document.getElementById('preview-section');
+        const safariPreview = document.getElementById('safari-preview');
+        const imgPreview = document.getElementById('img-preview');
+
+        console.log("Setting preview sources");
+        previewSection.style.display = 'block';
+        safariPreview.src = message.svgUrl;
+        imgPreview.src = message.svgUrl;
       }
     };
 
@@ -475,8 +575,8 @@
       );
     };
 
-    document.getElementById('cancel-button').onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*');
+    document.getElementById('test-button').onclick = () => {
+      window.open('https://safari.together.agency', '_blank');
     };
   </script>
 </body>
