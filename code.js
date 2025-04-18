@@ -88,9 +88,18 @@ async function processNodeHierarchy(node) {
   let fixedCount = 0;
 
   // First, check if the node itself has effects
-  if (node.type === "FRAME" && node.effects && node.effects.length > 0) {
-    await fixFrameEffects(node);
-    fixedCount++;
+  if (node.type === "FRAME") {
+    // Remove autolayout from this frame
+    if (node.layoutMode && node.layoutMode !== "NONE") {
+      node.layoutMode = "NONE";
+      console.log(`Removed autolayout from ${node.name}`);
+    }
+
+    // Process effects if present
+    if (node.effects && node.effects.length > 0) {
+      await fixFrameEffects(node);
+      fixedCount++;
+    }
   }
 
   // Then process all children recursively
@@ -120,51 +129,11 @@ async function fixFrameEffects(frame) {
   }
 
   try {
-    // Find the first non-auto-layout ancestor of this frame
-    let safeParent = frame.parent;
-    let currentNode = frame;
-    let offsetX = frame.x;
-    let offsetY = frame.y;
-
-    // Traverse up until we find a non-auto-layout container or reach the page
-    while (
-      safeParent &&
-      safeParent.type !== "PAGE" &&
-      safeParent.layoutMode &&
-      safeParent.layoutMode !== "NONE"
-    ) {
-      // Accumulate the offset position as we move up
-      offsetX += safeParent.x;
-      offsetY += safeParent.y;
-
-      // Move up to the next parent
-      currentNode = safeParent;
-      safeParent = safeParent.parent;
-    }
-
-    if (!safeParent) {
-      console.error(`   Cannot find a suitable parent for ${frame.name}`);
-      return;
-    }
-
-    // Find the position of the current node in the safe parent
-    const insertIndex = safeParent.children.indexOf(currentNode);
-    if (insertIndex < 0) {
-      console.error(`   Cannot find a valid insertion point for ${frame.name}`);
-      return;
-    }
-
-    console.log(
-      `   Found safe parent ${safeParent.name || safeParent.type} for ${
-        frame.name
-      } at index ${insertIndex}`
-    );
-
-    // Create a rectangle with the same size as the frame but positioned in the safe parent
+    // Create a rectangle with the same size as the frame
     const rect = figma.createRectangle();
     rect.resize(frame.width, frame.height);
-    rect.x = offsetX; // Use accumulated offset X
-    rect.y = offsetY; // Use accumulated offset Y
+    rect.x = frame.x;
+    rect.y = frame.y;
     rect.name = `${frame.name} Effects`;
 
     // Apply corner radius
@@ -192,16 +161,16 @@ async function fixFrameEffects(frame) {
     // Copy effects to the rectangle
     rect.effects = originalEffects;
 
-    // Insert the rectangle into the safe parent
-    safeParent.insertChild(insertIndex, rect);
+    // Insert the rectangle at the same level as the frame, just before it
+    const parent = frame.parent;
+    const index = parent.children.indexOf(frame);
+    parent.insertChild(index, rect);
 
     // Remove effects and fills from the original frame
     frame.effects = [];
     frame.fills = [];
 
-    console.log(
-      `   Created effects rectangle for ${frame.name} at position (${rect.x}, ${rect.y})`
-    );
+    console.log(`   Created effects rectangle for ${frame.name}`);
   } catch (e) {
     console.error(`   Error processing ${frame.name}:`, e);
     return;
